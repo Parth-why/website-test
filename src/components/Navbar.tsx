@@ -8,8 +8,10 @@ interface NavbarProps {
   isDark: boolean;
   toggleTheme: () => void;
   openAuth: (mode: 'login' | 'signup') => void;
-  user: any; // ✅ NEW
+  user: any;
 }
+
+const ADMIN_EMAIL = "parthdandekar07@gmail.com"; // 👈 CHANGE THIS
 
 const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, openAuth, user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,10 +27,12 @@ const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, openAuth, user }) 
 
   const isActive = (path: string) => location.pathname === path;
 
-  // 🔐 Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+
+  // 🔐 Admin check
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
@@ -77,11 +81,21 @@ const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, openAuth, user }) 
             </button>
 
             {user ? (
-              // 🔐 Logged in UI
               <>
                 <span className="text-sm text-gray-600 dark:text-gray-300">
                   {user.email}
                 </span>
+
+                {/* ✅ ADMIN BUTTON */}
+                {isAdmin && (
+                  <Link 
+                    to="/admin"
+                    className="px-5 py-2.5 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-full"
+                  >
+                    Admin
+                  </Link>
+                )}
+
                 <button 
                   onClick={handleLogout}
                   className="px-5 py-2.5 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-full"
@@ -90,7 +104,6 @@ const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, openAuth, user }) 
                 </button>
               </>
             ) : (
-              // ❌ Not logged in
               <>
                 <button 
                   onClick={() => openAuth('login')}
@@ -148,12 +161,22 @@ const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, openAuth, user }) 
 
               <div className="flex flex-col gap-3 px-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                 {user ? (
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full py-3 text-sm font-medium bg-red-600 text-white rounded-full"
-                  >
-                    Logout
-                  </button>
+                  <>
+                    {isAdmin && (
+                      <Link 
+                        to="/admin"
+                        className="w-full py-3 text-sm font-medium bg-green-600 text-white rounded-full text-center"
+                      >
+                        Admin
+                      </Link>
+                    )}
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full py-3 text-sm font-medium bg-red-600 text-white rounded-full"
+                    >
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button 
