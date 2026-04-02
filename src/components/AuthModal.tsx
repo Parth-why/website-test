@@ -1,6 +1,8 @@
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,29 +21,53 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
   });
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    setError('');
+
+    // Validation
+    if (mode === 'signup' && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match ❌');
       setIsLoading(false);
-      setSuccess(true);
-      
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-        // Reset form
-        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        // Show success notification
-        alert(mode === 'login' ? 'Successfully logged in!' : 'Account created successfully!');
-      }, 1500);
-    }, 1200);
+      return;
+    }
+
+    try {
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) {
+          setError(error.message);
+        } else {
+          setSuccess(true);
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) {
+          setError(error.message);
+        } else {
+          setSuccess(true);
+        }
+      }
+    } catch (err) {
+      setError('Something went wrong ❌');
+    }
+
+    setIsLoading(false);
   };
 
   return (
@@ -103,7 +129,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
                     </div>
                     <h3 className="text-2xl font-semibold mb-2">Success!</h3>
                     <p className="text-gray-500 dark:text-gray-400">
-                      {mode === 'login' ? 'You are now signed in.' : 'Your account has been created.'}
+                      {mode === 'login'
+                        ? 'You are now signed in.'
+                        : 'Check your email to confirm your account 📩'}
                     </p>
                   </motion.div>
                 ) : (
@@ -178,6 +206,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
                         />
                       </div>
                     )}
+
+                    {/* ERROR MESSAGE */}
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
 
                     <button 
                       type="submit" 
