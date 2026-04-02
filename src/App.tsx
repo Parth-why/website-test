@@ -10,6 +10,7 @@ import PastCases from './pages/PastCases';
 import Contact from './pages/Contact';
 import AuthModal from './components/AuthModal';
 import './App.css';
+import Admin from './pages/Admin'
 import { supabase } from './supabaseClient';
 
 function App() {
@@ -82,6 +83,7 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/cases" element={<PastCases />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
 
