@@ -12,19 +12,26 @@ interface AuthModalProps {
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode }) => {
   const [showPassword, setShowPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    city: '' // ✅ NEW
+    city: ''
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
+  // ✅ FIXED handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +39,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
     setIsLoading(true);
     setError('');
 
+    // ✅ Validation
     if (mode === 'signup' && formData.password !== formData.confirmPassword) {
       setError('Passwords do not match ❌');
       setIsLoading(false);
@@ -40,6 +48,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
 
     try {
       if (mode === 'signup') {
+
+        // ✅ SIGNUP
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -48,19 +58,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
         if (error) {
           setError(error.message);
         } else {
-          // ✅ Insert into profiles
-          if (data.user) {
-            await supabase.from('profiles').insert([
-              {
-                id: data.user.id,
-                name: formData.name,
-                city: formData.city
-              }
-            ]);
+          // ✅ INSERT PROFILE
+          if (data?.user) {
+            await supabase.from('profiles').insert({
+              id: data.user.id,
+              name: formData.name,
+              city: formData.city
+            });
           }
           setSuccess(true);
         }
+
       } else {
+
+        // ✅ LOGIN
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
@@ -103,10 +114,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
 
             {/* Tabs */}
             <div className="flex border-b border-gray-100 dark:border-gray-800 px-8">
-              <button onClick={() => setMode('login')} className={`flex-1 py-4 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : ''}`}>
+              <button 
+                onClick={() => setMode('login')} 
+                className={`flex-1 py-4 ${mode === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : ''}`}
+              >
                 Login
               </button>
-              <button onClick={() => setMode('signup')} className={`flex-1 py-4 ${mode === 'signup' ? 'text-blue-600 border-b-2 border-blue-600' : ''}`}>
+              <button 
+                onClick={() => setMode('signup')} 
+                className={`flex-1 py-4 ${mode === 'signup' ? 'text-blue-600 border-b-2 border-blue-600' : ''}`}
+              >
                 Sign Up
               </button>
             </div>
@@ -117,29 +134,87 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, setMode })
                 {success ? (
                   <div className="text-center py-10">
                     <h3 className="text-xl font-semibold">Success!</h3>
-                    <p>{mode === 'login' ? 'Logged in' : 'Account created'}</p>
+                    <p>{mode === 'login' ? 'Logged in successfully' : 'Account created successfully'}</p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
 
+                    {/* SIGNUP FIELDS */}
                     {mode === 'signup' && (
                       <>
-                        <input name="name" placeholder="Full Name" value={formData.name} onChange={handleInputChange} required className="w-full p-3 rounded-xl bg-gray-100" />
-                        <input name="city" placeholder="City" value={formData.city} onChange={handleInputChange} required className="w-full p-3 rounded-xl bg-gray-100" />
+                        <input
+                          name="name"
+                          placeholder="Full Name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                        />
+
+                        <input
+                          name="city"
+                          placeholder="City"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                        />
                       </>
                     )}
 
-                    <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleInputChange} required className="w-full p-3 rounded-xl bg-gray-100" />
+                    {/* EMAIL */}
+                    <input
+                      name="email"
+                      type="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                    />
 
-                    <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Password" value={formData.password} onChange={handleInputChange} required className="w-full p-3 rounded-xl bg-gray-100" />
+                    {/* PASSWORD */}
+                    <div className="relative">
+                      <input
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
 
+                    {/* CONFIRM PASSWORD */}
                     {mode === 'signup' && (
-                      <input name="confirmPassword" type="password" placeholder="Confirm Password" value={formData.confirmPassword} onChange={handleInputChange} required className="w-full p-3 rounded-xl bg-gray-100" />
+                      <input
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="Confirm Password"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                      />
                     )}
 
-                    {error && <p className="text-red-500">{error}</p>}
+                    {/* ERROR */}
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
 
-                    <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-xl">
+                    {/* BUTTON */}
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl"
+                    >
                       {isLoading ? 'Loading...' : mode === 'login' ? 'Login' : 'Sign Up'}
                     </button>
 
