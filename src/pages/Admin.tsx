@@ -1,13 +1,30 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
+const ADMIN_EMAIL = "parthdandekar07@gmail.com" // 👈 CHANGE THIS
+
 const Admin = () => {
   const [contacts, setContacts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
-    fetchContacts()
+    checkAccess()
   }, [])
+
+  const checkAccess = async () => {
+    const { data } = await supabase.auth.getUser()
+    const user = data.user
+
+    if (!user || user.email !== ADMIN_EMAIL) {
+      setAuthorized(false)
+      setLoading(false)
+      return
+    }
+
+    setAuthorized(true)
+    fetchContacts()
+  }
 
   const fetchContacts = async () => {
     const { data, error } = await supabase
@@ -15,13 +32,21 @@ const Admin = () => {
       .select('*')
       .order('id', { ascending: false })
 
-    if (error) {
-      console.log(error)
-    } else {
+    if (!error) {
       setContacts(data || [])
     }
 
     setLoading(false)
+  }
+
+  // 🚫 NOT AUTHORIZED
+  if (!loading && !authorized) {
+    return (
+      <div className="p-10 text-center">
+        <h1 className="text-3xl font-bold text-red-600">Access Denied ❌</h1>
+        <p className="mt-4">You are not authorized to view this page.</p>
+      </div>
+    )
   }
 
   return (
@@ -63,3 +88,4 @@ const Admin = () => {
 }
 
 export default Admin
+
