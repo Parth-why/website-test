@@ -11,21 +11,10 @@ import Contact from './pages/Contact';
 import AuthModal from './components/AuthModal';
 import './App.css';
 import { supabase } from './supabaseClient';
+
 function App() {
 
-useEffect(() => {
-  const testSupabase = async () => {
-    const { data, error } = await supabase
-      .from('test')
-      .select('*')
-
-    console.log('DATA:', data)
-    console.log('ERROR:', error)
-  }
-
-  testSupabase()
-}, [])
-
+  // 🌙 Theme state
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -33,9 +22,13 @@ useEffect(() => {
     }
     return true;
   });
+
+  // 🔐 Auth state
+  const [user, setUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
+  // 🌙 Theme effect
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -45,6 +38,24 @@ useEffect(() => {
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);
+
+  // 🔐 Get user + listen to auth changes
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+
+    getUser();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   const toggleTheme = () => setIsDark(!isDark);
 
@@ -56,11 +67,14 @@ useEffect(() => {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+        
         <Navbar 
           isDark={isDark} 
           toggleTheme={toggleTheme} 
           openAuth={openAuth} 
+          user={user}
         />
+
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -70,13 +84,16 @@ useEffect(() => {
             <Route path="/contact" element={<Contact />} />
           </Routes>
         </main>
+
         <Footer />
+
         <AuthModal 
           isOpen={isAuthOpen} 
           onClose={() => setIsAuthOpen(false)} 
           mode={authMode}
           setMode={setAuthMode}
         />
+
       </div>
     </BrowserRouter>
   );
